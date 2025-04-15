@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -68,17 +67,13 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if !passwordComparer([]byte(user.PasswordHash), loginData.Password) {
 		http.Error(w, "WRONG PASSWORD", http.StatusUnauthorized)
+		return
 	}
 
-	claim := jwt.MapClaims{
-		"Username": user.Username,
-		"exp":      time.Now().Add(time.Hour * 1),
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claim)
-	strToken, errToken := token.SignedString([]byte("verySecure"))
-	if errToken != nil {
-		log.Printf("COULD NOT STRINGIFY TOKEN")
-		return
+	strToken := generateJWT(user.Username)
+	if strToken == "" {
+		http.Error(w, "COULD NOT FETCH TOKEN", http.StatusInternalServerError)
+
 	}
 
 	if errEncode := json.NewEncoder(w).Encode(map[string]string{"Token": strToken}); errEncode != nil {
@@ -125,7 +120,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 func addUser(user *User) error {
 	result := DB.Create(user)
 	if result.Error != nil {
-		return errors.New("USER ALREADY REGISTERED")
+		return fmt.Errorf("FAILED TO ADD USER: %w", result.Error)
 	}
 	return nil
 }
@@ -134,17 +129,28 @@ func passwordHasher(password string) []byte {
 
 	hashedPass, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
+		log.Printf("Password Hashing failed: ", err)
 		return nil
 	}
 	return hashedPass
 }
 
 func passwordComparer(hashed []byte, password string) bool {
-	result := bcrypt.CompareHashAndPassword([]byte(hashed), []byte(password))
-	if result == nil {
-		log.Printf("COULD NOT ENCRYPT DATA")
-		return false
+	err := bcrypt.CompareHashAndPassword([]byte(hashed), []byte(password))
+	return err == nil
+}
+
+func generateJWT(username string) string {
+	claim := jwt.MapClaims{
+		"Username": username,
+		"exp":      time.Now().Add(time.Hour * 1).Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claim)
+	strToken, err := token.SignedString([]byte("verySecure"))
+	if err != nil {
+		log.Printf("COULD NOT STRINGIFY TOKEN")
+		return ""
 	}
 
-	return true
+	return strToken
 }
