@@ -5,8 +5,47 @@ import (
 	"FileUploadAPI/utils"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 )
+
+func UploadFileHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Wrong Method send. accept POST Method only", http.StatusBadRequest)
+		return
+	}
+
+	// tells go to parse the data("Break it up into different parts like file,metadata etc.") then tells it to accept only file sizes up to 10mb.
+	errParse := r.ParseMultipartForm(10 << 20)
+	if errParse != nil {
+		http.Error(w, "Could not Parse Data.", http.StatusBadRequest)
+		return
+	}
+
+	// extracts the uploaded file from the data. also extracts the metadata("handler").
+	file, handler, errFile := r.FormFile("file")
+	if errFile != nil {
+		http.Error(w, "Could not Get File. ", http.StatusBadRequest)
+		return
+	}
+
+	// Create the file in the "upload" dir with the name of the file.                ps: if the file already exists i does not create it again
+	dst, errCreate := os.Create("./uploads/" + handler.Filename)
+	if errCreate != nil {
+		http.Error(w, "Error Saving file", http.StatusInternalServerError)
+		return
+	}
+
+	_, errCopy := io.Copy(dst, file)
+	if errCopy != nil {
+		http.Error(w, "Error Copying file content", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Printf("Uploaded successfully")
+	defer file.Close()
+}
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -38,7 +77,8 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	if errEncode := json.NewEncoder(w).Encode(map[string]string{"Token": strToken}); errEncode != nil {
+	errEncode := json.NewEncoder(w).Encode(map[string]string{"Token": strToken})
+	if errEncode != nil {
 		http.Error(w, "COULD NOT FETCH TOKEN", http.StatusInternalServerError)
 	}
 

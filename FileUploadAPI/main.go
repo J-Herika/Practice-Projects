@@ -16,6 +16,7 @@ func main() {
 
 	http.HandleFunc("/register", handlers.RegisterHandler)
 	http.HandleFunc("/login", handlers.LoginHandler)
+	http.HandleFunc("/upload", handlers.UploadFileHandler)
 	errServer := http.ListenAndServe(":3000", nil)
 	if errServer != nil {
 		fmt.Printf("COULDN'T CONNECT TO SERVER")
