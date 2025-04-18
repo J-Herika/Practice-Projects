@@ -14,14 +14,26 @@ import (
 func DownloadFileHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Error Accept Get Methods only.", http.StatusBadRequest)
+		return
 	}
 
+	// get the name of the image from the url we basically cut the string and get the name only.
 	fileName := r.URL.Path[len("/download/"):]
 	if fileName == "" {
 		http.Error(w, "File is missing.", http.StatusBadRequest)
 		return
 	}
-	log.Print(fileName)
+
+	filePath := "./uploads/" + fileName
+	log.Print(filePath)
+	_, err := os.Stat(filePath)
+	if err != nil {
+		http.Error(w, "File Not found.", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Disposition", "attachment; filename="+fileName)
+	http.ServeFile(w, r, filePath)
 
 }
 
