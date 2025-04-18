@@ -6,9 +6,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 )
+
+func DownloadFileHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Error Accept Get Methods only.", http.StatusBadRequest)
+	}
+
+	fileName := r.URL.Path[len("/download/"):]
+	if fileName == "" {
+		http.Error(w, "File is missing.", http.StatusBadRequest)
+		return
+	}
+	log.Print(fileName)
+
+}
 
 func UploadFileHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
