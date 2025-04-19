@@ -1,5 +1,6 @@
 package database
 
+import "time"
 
 type User struct {
 	ID           uint   `gorm:"primaryKey;autoIncrement"`
@@ -10,4 +11,12 @@ type User struct {
 type UserInfo struct {
 	Username string
 	Password string
+}
+
+type File struct {
+	ID         uint
+	FileName   string
+	Path       string
+	UserID     uint
+	UploadTime time.Time
 }

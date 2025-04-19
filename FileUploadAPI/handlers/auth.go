@@ -4,16 +4,27 @@ import (
 	"FileUploadAPI/database"
 	"FileUploadAPI/utils"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"strings"
+
+	"github.com/dgrijalva/jwt-go"
 )
 
 func DeleteFileHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		http.Error(w, "Error Accept only delete Method", http.StatusBadRequest)
+		return
+	}
+
+	_, err := ExtractUserIDFromRequest(r)
+	if err != nil {
+		// return 401 unauthorized
+		http.Error(w, "Error unauthorized", http.StatusUnauthorized)
 		return
 	}
 
@@ -41,6 +52,12 @@ func DownloadFileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_, err := ExtractUserIDFromRequest(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	// get the name of the image from the url we basically cut the string and get the name only.
 	fileName := r.URL.Path[len("/download/"):]
 	if fileName == "" {
@@ -49,8 +66,8 @@ func DownloadFileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filePath := "./uploads/" + fileName
-	_, err := os.Stat(filePath)
-	if err != nil {
+	_, errFile := os.Stat(filePath)
+	if errFile != nil {
 		http.Error(w, "File Not found.", http.StatusNotFound)
 		return
 	}
@@ -175,4 +192,44 @@ func addUser(user *database.User) error {
 		return fmt.Errorf("FAILED TO ADD USER: %w", result.Error)
 	}
 	return nil
+}
+
+func ExtractUserIDFromRequest(r *http.Request) (uint, error) {
+	// Step 1: Get token string from header
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return 0, errors.New("missing auth header")
+	}
+
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || parts[0] != "Bearer" {
+		return 0, errors.New("invalid auth format")
+	}
+
+	tokenString := parts[1]
+
+	// Step 2: Parse the token
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method")
+		}
+		return []byte("your_secret_key"), nil
+	})
+
+	if err != nil || !token.Valid {
+		return 0, errors.New("invalid token")
+	}
+
+	// Step 3: Extract user_id from claims
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return 0, errors.New("could not parse claims")
+	}
+
+	userIDFloat, ok := claims["user_id"].(float64) // JWT stores numbers as float64
+	if !ok {
+		return 0, errors.New("user_id not found")
+	}
+
+	return uint(userIDFloat), nil
 }
