@@ -11,6 +11,30 @@ import (
 	"os"
 )
 
+func DeleteFileHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Error Accept only delete Method", http.StatusBadRequest)
+		return
+	}
+
+	// get imgName param value from url
+	fileName := r.URL.Query().Get("fileName")
+	if fileName == "" {
+		http.Error(w, "Error Empty value", http.StatusBadRequest)
+		return
+	}
+
+	filePath := "./uploads/" + fileName
+	err := os.Remove(filePath)
+
+	if err != nil {
+		http.Error(w, "Error Could not remove file. Make sure its the right file name OR it's stored.", http.StatusNotFound)
+		return
+	}
+
+	log.Print("successes!")
+}
+
 func DownloadFileHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Error Accept Get Methods only.", http.StatusBadRequest)
@@ -25,7 +49,6 @@ func DownloadFileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filePath := "./uploads/" + fileName
-	log.Print(filePath)
 	_, err := os.Stat(filePath)
 	if err != nil {
 		http.Error(w, "File Not found.", http.StatusNotFound)
