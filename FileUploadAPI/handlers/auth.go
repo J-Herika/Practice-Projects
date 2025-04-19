@@ -21,8 +21,8 @@ func DeleteFileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := ExtractUserIDFromRequest(r)
-	if err != nil {
+	_, errAuth := ExtractUserIDFromRequest(r)
+	if errAuth != nil {
 		// return 401 unauthorized
 		http.Error(w, "Error unauthorized", http.StatusUnauthorized)
 		return
