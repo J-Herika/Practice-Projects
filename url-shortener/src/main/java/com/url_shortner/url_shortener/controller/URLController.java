@@ -1,6 +1,7 @@
 package com.url_shortner.url_shortener.controller;
 
 
+import com.url_shortner.url_shortener.dto.URLDTO;
 import com.url_shortner.url_shortener.model.Url;
 import com.url_shortner.url_shortener.service.URLService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,7 +20,7 @@ public class URLController {
     }
 
     @GetMapping("/url")
-    public List<Url> getUrl(){
+    public List<URLDTO> getUrl(){
         return urlService.getUrls();
     }
 

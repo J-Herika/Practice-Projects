@@ -1,5 +1,6 @@
 package com.url_shortner.url_shortener.service;
 
+import com.url_shortner.url_shortener.dto.URLDTO;
 import com.url_shortner.url_shortener.model.Url;
 import com.url_shortner.url_shortener.repository.URLRepository;
 import jakarta.transaction.Transactional;
@@ -47,8 +48,8 @@ public class URLService {
         return urlRepository.findByshortenedURL(shortenedUrl);
     }
 
-    public List<Url> getUrls(){
-        return urlRepository.findAll();
+    public List<URLDTO> getUrls(){
+        return urlRepository.findAll().stream().map(url -> new URLDTO(url.getId(), url.getUrl(),url.getShortenedURL())).toList();
     }
 
 
