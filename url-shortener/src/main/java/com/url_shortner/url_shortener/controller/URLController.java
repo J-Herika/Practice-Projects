@@ -24,7 +24,7 @@ public class URLController {
         return urlService.getUrls();
     }
 
-    @GetMapping("/{shorturl}")
+    @GetMapping("/to/{shorturl}")
     public void redirect(@PathVariable String shorturl, HttpServletResponse response) throws IOException {
         Url urlToRedirect =  urlService.getShortenedURL(shorturl);
         IO.println(urlToRedirect.getUrl());

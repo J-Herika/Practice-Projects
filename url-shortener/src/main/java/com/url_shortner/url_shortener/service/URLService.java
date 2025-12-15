@@ -5,6 +5,7 @@ import com.url_shortner.url_shortener.model.Url;
 import com.url_shortner.url_shortener.repository.URLRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -44,6 +45,7 @@ public class URLService {
         return base62Encoder.encode(urlID + 10000); // Added 10000 to make the links look cooler
     }
 
+    @Cacheable(value = "urls", key = "#shortenedUrl")
     public Url getShortenedURL(String shortenedUrl){
         return urlRepository.findByshortenedURL(shortenedUrl);
     }
